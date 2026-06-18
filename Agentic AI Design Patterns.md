@@ -68,7 +68,7 @@ Gives complex objectives a coherent home and reduces duplicated work, lost conte
 Establish the operating system as shared governance mechanisms, structured memory systems, standardized workflows, coordination protocols, and defined permissions and escalation paths; then add specialized agents with clearly defined responsibilities on top of that foundation. 
 
 **Known Uses:**  
-The Agentic Operating System assembled by the AOS Factory, comprising governance agents (Chief of Staff, Memory, Security, Review) and optional productive agents.
+The Agentic Operating System assembled by the [Open AOS Factory](https://github.com/neoClarity-AI/Open-AOS-Factory), comprising governance agents (Chief of Staff, Memory, Security, Review) and optional productive agents.
 
 **Related Patterns:**  
 [Governance-First Pattern](#governance-first-pattern), [AOS Factory Pattern](#aos-factory-pattern), [Chief of Staff Pattern](#chief-of-staff-pattern), [Memory Isolation Pattern](#memory-isolation-pattern).
@@ -124,7 +124,7 @@ Ensures consistency; may reduce flexibility in one-off agents.
 Standardize agent templates and system assembly processes.
 
 **Known Uses:**  
-Frameworks for deploying AI ecosystems.
+The [Open AOS Factory](https://github.com/neoClarity-AI/Open-AOS-Factory) is a reference implementation of this pattern.
 
 **Related Patterns:**  
 [Agent Factory Pattern](#agent-factory-pattern), [Agentic Operating System Pattern](#agentic-operating-system-pattern), [Governance-First Pattern](#governance-first-pattern).
