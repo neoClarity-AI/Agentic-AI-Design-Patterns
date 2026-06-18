@@ -2,7 +2,12 @@
 
 ## Table of Contents
 
+**[Design Principles](#design-principles)**
+
+**[How to Read These Patterns](#how-to-read-these-patterns)**
+
 **[Architecture Patterns](#architecture-patterns)**
+
 - [Agentic Operating System Pattern](#agentic-operating-system-pattern)
 - [AOS Factory Pattern](#aos-factory-pattern)
 - [Agent Factory Pattern](#agent-factory-pattern)
@@ -29,13 +34,37 @@
 - [Administrator Pattern](#administrator-pattern)
 - [Instructor Pattern](#instructor-pattern)
 
+## Design Principles
+
+The patterns in this catalog are shaped by a consistent set of design principles, drawn from the design specification in the [Open AOS Factory](https://github.com/neoClarity-AI/Open-AOS-Factory) reference implementation. Some are stated explicitly in the specification's own principles section. Others are embodied throughout the design without being named. Together they explain *why* the architecture, governance, capability, and productivity patterns take the forms they do.
+
+**Spec-Driven Single Source of Truth.** The design specification is canonical, and the factory, builders, plugin, and documentation are all renderings of it. Regenerating from the spec reproduces the same system, every generated file is stamped with the spec version it came from, and an instance's own evolving version is tracked separately from that provenance, so the whole system stays auditable and reproducible.
+
+**Governance Before Productivity.** Safety, memory, coordination, and quality review are foundational rather than additive: the required governance agents exist before any productive agent, so a fast, capable, ungoverned system is never a possible end state.
+
+**Single Responsibility and Separation of Concerns.** Each agent owns one domain with explicit non-responsibilities and each file has one purpose recoverable from its path, and the design keeps roles cleanly divided: builders apart from the agents they build, coordinators apart from specialized workers.
+
+**Non-Destructive, Approval-Gated Safety.** The system prefers actions that cannot lose work, creating or appending rather than overwriting, deleting, or moving. Anything consequential is gated behind the user typing `Proceed`. That approval covers only the exact action described and never becomes a standing grant. Tool access is denied until explicitly granted. Logs are append-only, corrected by new entries rather than rewritten.
+
+**Standardized, Extensible Schemas.** Uniform schemas and controlled vocabularies, with conventions like kebab-case slugs and ISO dates, keep generated files legible and let new agents and capabilities be added without inventing new formats or restating shared rules, since configs reference global permissions and the tool-access matrix instead of duplicating them.
+
+**Controlled Evolution.** An instance is a living system, so every file is either a regenerable definition file owned by the factory or an accumulating data file owned by operating agents, and no operating agent edits a definition file. Updates run through dry-run previews that warn on version mismatch, block only on explicitly broken compatibility, and never silently overwrite.
+
+**Multi-Instance Routing and Memory Isolation.** One workspace can host many instances as siblings, with a router that resolves exactly one active target per request and never blends one instance's memory into another.
+
+**Self-Documenting and Self-Improving.** Every instance generates a plain-language guide and improves itself on daily-through-quarterly rhythms, making documentation and maintenance built-in behaviors rather than manual afterthoughts.
+
+**Conversational and No-Code.** The primary interface is conversational and built for the non-technical owner: setup is an interview, agents are invoked by intent-matched trigger phrases, and the only exact-string command in the entire system is `Proceed`.
+
+**Portability.** The system is plain markdown plus a thin routing layer, so it ports beyond its target platform and adapts to other models. Platform-specific mechanisms are avoided wherever a portable one exists.
+
 ## How to Read These Patterns
 
 Each pattern is documented with a template adapted from the "Gang of Four" [Design Patterns](https://en.wikipedia.org/wiki/Design_Patterns) book, in this field order: Intent; Classification; Motivation (a brief narrative scenario); Applicability; Structure; Participants; Collaborations; Consequences; Implementation; Known Uses; Related Patterns.
 
 This template deviates from the canonical GoF format in a few deliberate ways. *Also Known As* and *Sample Code* are omitted, because these patterns are conceptual rather than code-level. Motivation is written as a short narrative that states the problem and how the pattern resolves it, in keeping with the original GoF scenario style.
 
-Two optional fields appear only where useful. *Variants* lists the sub-types of a pattern and is an intentional extension to the GoF template (used by the Loop and Circuit Breaker patterns); it appears after Applicability. *Reference Implementation* names the concrete agent or agents that realize a Productivity pattern within an Agentic Operating System; it appears just before Known Uses.
+Two optional fields appear only where useful. *Variants* lists the sub-types of a pattern and is an intentional extension to the GoF template (used by the Loop and Circuit Breaker patterns). It appears after Applicability. *Reference Implementation* names the concrete agent or agents that realize a Productivity pattern within an Agentic Operating System. It appears just before Known Uses.
 
 ## Architecture Patterns
 
@@ -59,13 +88,13 @@ Use this pattern when an objective needs several specialized capabilities workin
 The operating-system framework, specialized agents with clearly defined responsibilities, the governance layer, the memory layer, the workflow layer, and the user. 
 
 **Collaborations:**  
-Specialized agents operate within the shared governance, memory, and workflow layers; coordination protocols and escalation paths route work between them, while governance constrains every action. 
+Specialized agents operate within the shared governance, memory, and workflow layers. Coordination protocols and escalation paths route work between them, while governance constrains every action. 
 
 **Consequences:**  
-Gives complex objectives a coherent home and reduces duplicated work, lost context, and ungoverned action; the cost is the overhead of building and maintaining the shared layers, plus a risk of bottlenecks at the coordination layer. 
+Gives complex objectives a coherent home and reduces duplicated work, lost context, and ungoverned action. The cost is the overhead of building and maintaining the shared layers, plus a risk of bottlenecks at the coordination layer. 
 
 **Implementation:**  
-Establish the operating system as shared governance mechanisms, structured memory systems, standardized workflows, coordination protocols, and defined permissions and escalation paths; then add specialized agents with clearly defined responsibilities on top of that foundation. 
+Establish the operating system as shared governance mechanisms, structured memory systems, standardized workflows, coordination protocols, and defined permissions and escalation paths. Then add specialized agents with clearly defined responsibilities on top of that foundation. 
 
 **Known Uses:**  
 The Agentic Operating System assembled by the [Open AOS Factory](https://github.com/neoClarity-AI/Open-AOS-Factory), comprising governance agents (Chief of Staff, Memory, Security, Review) and optional productive agents.
@@ -118,13 +147,13 @@ Factory process, multiple modular agents.
 Factory integrates governance and functional agents into a system.
 
 **Consequences:**  
-Ensures consistency; may reduce flexibility in one-off agents.
+Ensures consistency. May reduce flexibility in one-off agents.
 
 **Implementation:**  
 Standardize agent templates and system assembly processes.
 
 **Known Uses:**  
-The [Open AOS Factory](https://github.com/neoClarity-AI/Open-AOS-Factory) is a reference implementation of this pattern.
+The [Open AOS Factory](https://github.com/neoClarity-AI/Open-AOS-Factory) is a reference implementation of this pattern (the Build AOS builder and per-agent builders).
 
 **Related Patterns:**  
 [Agent Factory Pattern](#agent-factory-pattern), [Agentic Operating System Pattern](#agentic-operating-system-pattern), [Governance-First Pattern](#governance-first-pattern).
@@ -143,7 +172,7 @@ Create individual agents tailored to specific roles.
 Architecture Pattern
 
 **Motivation:**  
-Not all problems justify a whole operating system; standing up an entire AOS for a single, narrow need is wasteful, yet hand-building one-off agents is slow and inconsistent. A factory resolves this tension by producing individual agents from role-specific templates and configurations, delivering a tailored, specialized agent quickly while keeping a consistent baseline.
+Not all problems justify a whole operating system. Standing up an entire AOS for a single, narrow need is wasteful, yet hand-building one-off agents is slow and inconsistent. A factory resolves this tension by producing individual agents from role-specific templates and configurations, delivering a tailored, specialized agent quickly while keeping a consistent baseline.
 
 **Applicability:**  
 Use this pattern when a single narrow need doesn't justify a whole operating system, but you still want a tailored agent produced quickly from a consistent baseline.
@@ -161,7 +190,7 @@ Increases flexibility but might lead to inconsistent governance if used alone.
 Provide agent templates and role-specific configurations.
 
 **Known Uses:**  
-Agent builders for single-purpose bots.
+Agent builders for single-purpose bots. The [Open AOS Factory](https://github.com/neoClarity-AI/Open-AOS-Factory) is a reference implementation of this pattern (the per-agent builders).
 
 **Related Patterns:**  
 [AOS Factory Pattern](#aos-factory-pattern).
@@ -199,10 +228,10 @@ Governance agents monitor and restrict functional agents' actions.
 Improves safety and alignment but may delay initial functionality.
 
 **Implementation:**  
-Start with a base governance layer; add functional agents only after governance is in place.
+Start with a base governance layer. Add functional agents only after governance is in place.
 
 **Known Uses:**  
-Found in agent frameworks that prioritize security.
+Found in agent frameworks that prioritize security. The [Open AOS Factory](https://github.com/neoClarity-AI/Open-AOS-Factory) is a reference implementation of this pattern (Security, Memory, Chief of Staff, and Review Agents).
 
 **Related Patterns:**  
 [Agentic Operating System Pattern](#agentic-operating-system-pattern), [AOS Factory Pattern](#aos-factory-pattern), [Trustworthy Autonomy Pattern](#trustworthy-autonomy-pattern), [Self-Improvement Pattern](#self-improvement-pattern).
@@ -233,13 +262,13 @@ Autonomous agent, user approver.
 Agent acts freely but seeks user permission for key actions.
 
 **Consequences:**  
-Balances efficiency with safety; adds user interaction overhead.
+Balances efficiency with safety. Adds user interaction overhead.
 
 **Implementation:**  
 Use approval workflows or human-in-the-loop mechanisms for critical tasks.
 
 **Known Uses:**  
-Common in AI tools used in regulated industries.
+Common in AI tools used in regulated industries. The [Open AOS Factory](https://github.com/neoClarity-AI/Open-AOS-Factory) is a reference implementation of this pattern (enforced by every agent's Approval Requirements, with the Security Agent owning the approval rules and tool access matrix).
 
 **Related Patterns:**  
 [Governance-First Pattern](#governance-first-pattern), [Self-Improvement Pattern](#self-improvement-pattern), [Self-Validation Pattern](#self-validation-pattern), [Circuit Breaker Pattern](#circuit-breaker-pattern), [Assistant Pattern](#assistant-pattern), [Collaborator Pattern](#collaborator-pattern), [Administrator Pattern](#administrator-pattern).
@@ -276,7 +305,7 @@ Ensures privacy but may complicate cross-agent tasks.
 Use strict memory separation and labeling.
 
 **Known Uses:**  
-Seen in multi-tenant AI environments.
+Seen in multi-tenant AI environments. The [Open AOS Factory](https://github.com/neoClarity-AI/Open-AOS-Factory) is a reference implementation of this pattern (Memory Agent).
 
 **Related Patterns:**  
 [Agentic Operating System Pattern](#agentic-operating-system-pattern), [Router Pattern](#router-pattern), [Self-Improvement Pattern](#self-improvement-pattern), [Loop Pattern](#loop-pattern), [Organizer Pattern](#organizer-pattern).
@@ -304,16 +333,16 @@ Use this pattern when a system runs continuously over a long horizon and would o
 Review/Reflection agent, the other agents whose outputs it audits, shared system state (memory, logs, projects, manifest), and the user as approver.
 
 **Collaborations:**  
-Runs the weekly review ("What needs follow-up soon?"), monthly review ("What is stale, misplaced, or structurally messy?"), and quarterly review ("Is the whole system still aimed at the right goals?"); audits generated files for completeness and consistency; reconciles system version and regenerates user-facing projections; records recurring findings and improvement patterns in its own memory.
+Runs the weekly review ("What needs follow-up soon?"), monthly review ("What is stale, misplaced, or structurally messy?"), and quarterly review ("Is the whole system still aimed at the right goals?"). Audits generated files for completeness and consistency. Reconciles system version and regenerates user-facing projections. Records recurring findings and improvement patterns in its own memory.
 
 **Consequences:**  
-The system compounds quality over time and catches drift early; the cost is added review overhead and a strict boundary: the reviewer must propose rather than perform, and must not silently rewrite the definitions it reviews.
+The system compounds quality over time and catches drift early. The cost is added review overhead and a strict boundary: the reviewer must propose rather than perform, and must not silently rewrite the definitions it reviews.
 
 **Implementation:**  
-Running reviews, audits, and producing findings is autonomous; any change that alters files is approval-gated (propose, don't act). The reviewer operates as a *projection and refinement* role: it regenerates data files and projections but does not modify framework-derived definition files (the drift invariant). Persist recurring findings and improvement patterns in agent memory so reviews get sharper over time.
+Running reviews, audits, and producing findings is autonomous. Any change that alters files is approval-gated (propose, don't act). The reviewer operates as a *projection and refinement* role: it regenerates data files and projections but does not modify framework-derived definition files (the drift invariant). Persist recurring findings and improvement patterns in agent memory so reviews get sharper over time.
 
 **Known Uses:**  
-Retrospective and quality-review agents; the Review/Reflection Agent in the AOS, which owns completeness/consistency audits, the weekly/monthly/quarterly reviews, AOS User Guide regeneration, and `aos_version` reconciliation.
+Retrospective and quality-review agents. The [Open AOS Factory](https://github.com/neoClarity-AI/Open-AOS-Factory) is a reference implementation of this pattern: the Review Agent in the AOS, which owns completeness/consistency audits, the weekly/monthly/quarterly reviews, AOS User Guide regeneration, and `aos_version` reconciliation. 
 
 **Related Patterns:**  
 [Governance-First Pattern](#governance-first-pattern), [Trustworthy Autonomy Pattern](#trustworthy-autonomy-pattern), [Self-Validation Pattern](#self-validation-pattern), [Memory Isolation Pattern](#memory-isolation-pattern).
@@ -344,7 +373,7 @@ Producing agent, validating subagent, success/validation criteria.
 Implemented via the Subagent Pattern (the validator is a spawned child) and typically the Goal variant of the Loop Pattern (it loops until validation completes). Complements the Circuit Breaker Pattern: validation that never converges should trip a guard.
 
 **Consequences:**  
-Raises output quality and grounds acceptance in evidence, suiting unattended autonomy; but adds cost and latency, and weak criteria give false confidence while burning tokens.
+Raises output quality and grounds acceptance in evidence, suiting unattended autonomy. But it adds cost and latency, and weak criteria give false confidence while burning tokens.
 
 **Implementation:**  
 Define concrete, checkable success criteria (run a smoke test, run the suite against a base branch). Give the validating subagent a specific goal, not a vague "check this." Keep the validator independent of the producer.
@@ -376,8 +405,8 @@ Use this pattern when an agent runs unattended against a fallible dependency or 
 
 **Variants:**
 
-- *Fault Breaker*: trips on repeated failures or errors; follows the classic closed → open → half-open cycle, periodically probing whether the dependency has recovered.
-- *Cost Guardrail*: trips on resource, iteration, or budget spend, or on non-convergence; halts and escalates to the human rather than retrying.
+- *Fault Breaker*: trips on repeated failures or errors. Follows the classic closed → open → half-open cycle, periodically probing whether the dependency has recovered.
+- *Cost Guardrail*: trips on resource, iteration, or budget spend, or on non-convergence. Halts and escalates to the human rather than retrying.
 
 **Participants:**  
 Monitor, the guarded loop/operation, the threshold or budget, the escalation or recovery target.
@@ -386,10 +415,10 @@ Monitor, the guarded loop/operation, the threshold or budget, the escalation or 
 Wraps the Loop Pattern (including Subagent and Self-Validation loops). Complements Trustworthy Autonomy, which gates critical actions on human approval, whereas the breaker bounds resource and failure runaway.
 
 **Consequences:**  
-Prevents runaway cost and cascading failure, making unattended autonomy safe to deploy; but thresholds need tuning (too tight kills useful work, too loose defeats the purpose) and monitoring adds overhead.
+Prevents runaway cost and cascading failure, making unattended autonomy safe to deploy. But thresholds need tuning (too tight kills useful work, too loose defeats the purpose) and monitoring adds overhead.
 
 **Implementation:**  
-Set explicit limits (max iterations, token/time budget, failure count). Choose the trip response per variant: the Fault Breaker retries via a half-open probe; the Cost Guardrail halts and surfaces to the human. Monitor loops for both cost and efficiency.
+Set explicit limits (max iterations, token/time budget, failure count). Choose the trip response per variant: the Fault Breaker retries via a half-open probe. The Cost Guardrail halts and surfaces to the human. Monitor loops for both cost and efficiency.
 
 **Known Uses:**  
 Stopping retries against a failing tool or MCP; capping token spend on a goal loop with thin validation criteria.
@@ -433,7 +462,7 @@ Increases system consistency but may add a bottleneck.
 Design a mediator agent that oversees workflows.
 
 **Known Uses:**  
-Seen in multi-agent virtual assistant systems.
+Seen in multi-agent virtual assistant systems. The [Open AOS Factory](https://github.com/neoClarity-AI/Open-AOS-Factory) is a reference implementation of this pattern (Chief of Staff Agent).
 
 **Related Patterns:**  
 [Agentic Operating System Pattern](#agentic-operating-system-pattern), [Router Pattern](#router-pattern), [Subagent Pattern](#subagent-pattern), [Assistant Pattern](#assistant-pattern).
@@ -470,7 +499,7 @@ Improves adaptability but can add complexity.
 Use rule-based or learning-based routing.
 
 **Known Uses:**  
-Present in distributed AI platforms.
+Present in distributed AI platforms. The [Open AOS Factory](https://github.com/neoClarity-AI/Open-AOS-Factory) is a reference implementation of this pattern (Chief of Staff Agent, joint owner of the AOS Workspace router).
 
 **Related Patterns:**  
 [Chief of Staff Pattern](#chief-of-staff-pattern), [Memory Isolation Pattern](#memory-isolation-pattern), [Subagent Pattern](#subagent-pattern).
@@ -499,19 +528,19 @@ Use this pattern when work is recurring or long-running and shouldn't wait on a 
 - *Heartbeat*: fires on a fixed interval (every 5 minutes, every hour); suited to polling.
 - *Cron*: fires on a defined schedule or time (9am, every Friday night); suited to periodic routines.
 - *Hook*: fires on an event: an internal lifecycle event (tool called, session started) or an external webhook (email received).
-- *Goal*: runs against a measurable outcome until it is validated or the agent is blocked; the exit condition is success criteria, not a clock.
+- *Goal*: runs against a measurable outcome until it is validated or the agent is blocked. The exit condition is success criteria, not a clock.
 
 **Participants:**  
 Trigger/scheduler, looping agent, exit condition, optional collaborators (state store, isolation sandbox).
 
 **Collaborations:**  
-Persists progress via *Externalized State* (a markdown to-do list or task tracker) so it survives across runs; runs inside *Execution Isolation* (a sandbox or work tree) so concurrent agents don't collide; often drives the Subagent Pattern and is bounded by the Circuit Breaker Pattern.
+Persists progress via *Externalized State* (a markdown to-do list or task tracker) so it survives across runs. Runs inside *Execution Isolation* (a sandbox or work tree) so concurrent agents don't collide. Often drives the Subagent Pattern and is bounded by the Circuit Breaker Pattern.
 
 **Consequences:**  
-Provides unattended, recurring autonomy and frees the human from manual triggering; goal loops in particular can burn tokens and require precise exit criteria plus monitoring.
+Provides unattended, recurring autonomy and frees the human from manual triggering. Goal loops in particular can burn tokens and require precise exit criteria plus monitoring.
 
 **Implementation:**  
-Use the platform's scheduling/automation primitives (scheduled tasks, routines, automations). Design by the "onboarding an employee" model: specify the job, cadence, and done-criteria as if briefing a new hire. For goal loops, write success criteria precisely; consider having the agent draft its own goal.
+Use the platform's scheduling/automation primitives (scheduled tasks, routines, automations). Design by the "onboarding an employee" model: specify the job, cadence, and done-criteria as if briefing a new hire. For goal loops, write success criteria precisely. Consider having the agent draft its own goal.
 
 **Known Uses:**  
 Morning-briefing scheduled tasks; a daily aging-PR reviewer; a Gmail-inbox cleanup goal loop; a weekly skills-identification automation.
@@ -533,7 +562,7 @@ Federate a bounded subtask to a spawned, ephemeral child agent (especially for v
 Capability Pattern
 
 **Motivation:**  
-A single agent thread that tries to do everything accumulates context, mixes concerns, and becomes hard to keep reliable, particularly when the work includes independent checks such as validation. Spawning a dedicated child agent for a specific subtask, letting it complete in its own context, and absorbing the result distributes the work without polluting the parent thread; subagents can themselves spawn subagents, enabling recursive teams.
+A single agent thread that tries to do everything accumulates context, mixes concerns, and becomes hard to keep reliable, particularly when the work includes independent checks such as validation. Spawning a dedicated child agent for a specific subtask, letting it complete in its own context, and absorbing the result distributes the work without polluting the parent thread. Subagents can themselves spawn subagents, enabling recursive teams.
 
 **Applicability:**  
 Use this pattern when a bounded subtask (especially validation) should run in its own context, so the main thread stays focused and concerns don't intermingle.
@@ -542,10 +571,10 @@ Use this pattern when a bounded subtask (especially validation) should run in it
 Parent agent, one or more spawned subagents, the scoped subtask.
 
 **Collaborations:**  
-Frequently invoked from within a Loop; pairs with Self-Validation when the subtask is to verify the parent's output. Distinct from Router and Chief of Staff, which direct work among standing agents rather than spawning new ephemeral ones.
+Frequently invoked from within a Loop. Pairs with Self-Validation when the subtask is to verify the parent's output. Distinct from Router and Chief of Staff, which direct work among standing agents rather than spawning new ephemeral ones.
 
 **Consequences:**  
-Enables parallelism, separation of concerns, and a cleaner main thread, and recursion lets it scale; but more agents mean more cost and coordination, and each needs its own tools and permissions.
+Enables parallelism, separation of concerns, and a cleaner main thread, and recursion lets it scale. But more agents mean more cost and coordination, and each needs its own tools and permissions.
 
 **Implementation:**  
 Use the platform's subagent/thread-spawning mechanism. Give each subagent a tight scope and only the tools it needs. For validation subagents, hand them a goal (see the Goal variant of the Loop Pattern).
@@ -583,19 +612,16 @@ Use this pattern when a user's commitments, calendar, and incoming messages need
 Assistant agent, user, Chief of Staff, downstream agents (e.g., Project Manager).
 
 **Collaborations:**  
-Captures and prioritizes tasks, proposes schedules and focus blocks, triages messages and promotes items to tasks or other containers; surfaces today's and at-risk items in the daily brief.
+Captures and prioritizes tasks, proposes schedules and focus blocks, triages messages and promotes items to tasks or other containers. Surfaces today's and at-risk items in the daily brief.
 
 **Consequences:**  
-Reduces dropped commitments and context-switching cost; depends on consistent capture and on approval gates for sending messages or changing shared calendars.
+Reduces dropped commitments and context-switching cost. Depends on consistent capture and on approval gates for sending messages or changing shared calendars.
 
 **Implementation:**  
-Maintain structured task, calendar, and inbox state in agent memory; drafting and proposing are autonomous, while sending messages and modifying shared calendars require explicit approval.
-
-**Reference Implementation:**  
-Task/Commitment, Calendar/Scheduling, and Inbox/Communications Agents.
+Maintain structured task, calendar, and inbox state in agent memory. Drafting and proposing are autonomous, while sending messages and modifying shared calendars require explicit approval.
 
 **Known Uses:**  
-Executive-assistant and personal-productivity agents.
+Executive-assistant and personal-productivity agents. The [Open AOS Factory](https://github.com/neoClarity-AI/Open-AOS-Factory) is a reference implementation of this pattern (Task/Commitment, Calendar/Scheduling, and Inbox/Communications Agents).
 
 **Related Patterns:**  
 [Chief of Staff Pattern](#chief-of-staff-pattern), [Trustworthy Autonomy Pattern](#trustworthy-autonomy-pattern), [Administrator Pattern](#administrator-pattern).
@@ -623,19 +649,16 @@ Use this pattern when a decision needs information gathered and weighed across m
 Research agent, information sources, user, requesting agents.
 
 **Collaborations:**  
-Receives questions from the user or other agents; searches approved sources; returns synthesized briefs with citations and confidence notes.
+Receives questions from the user or other agents. Searches approved sources. Returns synthesized briefs with citations and confidence notes.
 
 **Consequences:**  
-Accelerates well-grounded decisions; quality depends on source access and on honest representation of uncertainty.
+Accelerates well-grounded decisions. Quality depends on source access and on honest representation of uncertainty.
 
 **Implementation:**  
-Use approved search and retrieval tools per the access matrix; always cite sources and flag confidence; store durable findings in memory.
-
-**Reference Implementation:**  
-Research Agent.
+Use approved search and retrieval tools per the access matrix. Always cite sources and flag confidence. Store durable findings in memory.
 
 **Known Uses:**  
-Research and analyst agents.
+Research and analyst agents. The [Open AOS Factory](https://github.com/neoClarity-AI/Open-AOS-Factory) is a reference implementation of this pattern (Research Agent).
 
 **Related Patterns:**  
 [Organizer Pattern](#organizer-pattern), [Collaborator Pattern](#collaborator-pattern), [Instructor Pattern](#instructor-pattern).
@@ -666,16 +689,13 @@ Collaborator agent, user, Research agent (for inputs).
 Drafts and edits content, incorporates user feedback across iterations, captures durable voice and style preferences in memory.
 
 **Consequences:**  
-Speeds content creation and preserves a consistent voice; publishing or sending the output requires explicit approval to keep the user in control.
+Speeds content creation and preserves a consistent voice. Publishing or sending the output requires explicit approval to keep the user in control.
 
 **Implementation:**  
-Drafting and editing are autonomous; publishing or sending is approval-required; persist voice and style preferences in memory for reuse.
-
-**Reference Implementation:**  
-Writing/Content Agent.
+Drafting and editing are autonomous. Publishing or sending is approval-required. Persist voice and style preferences in memory for reuse.
 
 **Known Uses:**  
-Writing and content-generation agents.
+Writing and content-generation agents. The [Open AOS Factory](https://github.com/neoClarity-AI/Open-AOS-Factory) is a reference implementation of this pattern (Writing/Content Agent).
 
 **Related Patterns:**  
 [Researcher Pattern](#researcher-pattern), [Trustworthy Autonomy Pattern](#trustworthy-autonomy-pattern), [Instructor Pattern](#instructor-pattern).
@@ -706,16 +726,13 @@ Organizer agent, user, other agents that produce or consume files.
 Builds and maintains a catalog/index, proposes consistent naming and filing, retrieves items on request.
 
 **Consequences:**  
-Makes information reliably retrievable; moving, renaming, or deleting files is consequential and must be proposed rather than performed autonomously.
+Makes information reliably retrievable. Moving, renaming, or deleting files is consequential and must be proposed rather than performed autonomously.
 
 **Implementation:**  
-Creating index and catalog files is autonomous; moving, renaming, archiving, overwriting, or deleting files is approval-required: propose, do not act.
-
-**Reference Implementation:**  
-Document Librarian Agent.
+Creating index and catalog files is autonomous. Moving, renaming, archiving, overwriting, or deleting files is approval-required: propose, do not act.
 
 **Known Uses:**  
-Document-management and knowledge-base agents.
+Document-management and knowledge-base agents. The [Open AOS Factory](https://github.com/neoClarity-AI/Open-AOS-Factory) is a reference implementation of this pattern (Document Librarian Agent).
 
 **Related Patterns:**  
 [Researcher Pattern](#researcher-pattern), [Memory Isolation Pattern](#memory-isolation-pattern).
@@ -746,16 +763,13 @@ Administrator agent, user, Assistant agent (for related deadlines).
 Tracks and summarizes records, drafts administrative documents, surfaces items needing attention in operating rhythms.
 
 **Consequences:**  
-Keeps administrative state current with low effort; sensitive details and any spending or external commitment require explicit approval.
+Keeps administrative state current with low effort. Sensitive details and any spending or external commitment require explicit approval.
 
 **Implementation:**  
-Tracking, summarizing, and drafting are autonomous; spending money or committing externally is always approval-required; storage of sensitive specifics requires explicit approval.
-
-**Reference Implementation:**  
-Finance/Admin Agent.
+Tracking, summarizing, and drafting are autonomous. Spending money or committing externally is always approval-required. Storage of sensitive specifics requires explicit approval.
 
 **Known Uses:**  
-Finance and administrative-operations agents.
+Finance and administrative-operations agents. The [Open AOS Factory](https://github.com/neoClarity-AI/Open-AOS-Factory) is a reference implementation of this pattern (Finance/Admin Agent).
 
 **Related Patterns:**  
 [Trustworthy Autonomy Pattern](#trustworthy-autonomy-pattern), [Assistant Pattern](#assistant-pattern).
@@ -783,19 +797,16 @@ Use this pattern when a user is learning a topic over time and would benefit fro
 Instructor agent, user, Research agent (for source material).
 
 **Collaborations:**  
-Produces study plans, plain-language explanations, and practice questions; tracks progress and surfaces stale or overdue topics during reviews.
+Produces study plans, plain-language explanations, and practice questions. Tracks progress and surfaces stale or overdue topics during reviews.
 
 **Consequences:**  
-Supports durable, personalized learning; effectiveness depends on honest progress tracking and the user's engagement with practice.
+Supports durable, personalized learning. Effectiveness depends on honest progress tracking and the user's engagement with practice.
 
 **Implementation:**  
-Generate explanations, plans, and practice autonomously; track progress in agent memory; surface overdue topics through operating rhythms.
-
-**Reference Implementation:**  
-Learning/Tutor Agent.
+Generate explanations, plans, and practice autonomously. Track progress in agent memory. Surface overdue topics through operating rhythms.
 
 **Known Uses:**  
-Tutoring and learning-companion agents.
+Tutoring and learning-companion agents. The [Open AOS Factory](https://github.com/neoClarity-AI/Open-AOS-Factory) is a reference implementation of this pattern (Learning/Tutor Agent).
 
 **Related Patterns:**  
 [Researcher Pattern](#researcher-pattern), [Collaborator Pattern](#collaborator-pattern).
