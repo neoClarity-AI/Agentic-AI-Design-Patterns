@@ -205,7 +205,7 @@ Start with a base governance layer; add functional agents only after governance 
 Found in agent frameworks that prioritize security.
 
 **Related Patterns:**  
-[Trustworthy Autonomy Pattern](#trustworthy-autonomy-pattern).
+[Agentic Operating System Pattern](#agentic-operating-system-pattern), [AOS Factory Pattern](#aos-factory-pattern), [Trustworthy Autonomy Pattern](#trustworthy-autonomy-pattern), [Self-Improvement Pattern](#self-improvement-pattern).
 
 **Structure:**  
 TBD: A system diagram showing governance agents instantiated first, before functional agents.
@@ -242,7 +242,7 @@ Use approval workflows or human-in-the-loop mechanisms for critical tasks.
 Common in AI tools used in regulated industries.
 
 **Related Patterns:**  
-[Governance-First Pattern](#governance-first-pattern).
+[Governance-First Pattern](#governance-first-pattern), [Self-Improvement Pattern](#self-improvement-pattern), [Self-Validation Pattern](#self-validation-pattern), [Circuit Breaker Pattern](#circuit-breaker-pattern), [Assistant Pattern](#assistant-pattern), [Collaborator Pattern](#collaborator-pattern), [Administrator Pattern](#administrator-pattern).
 
 **Structure:**  
 TBD: Interaction diagram showing agent autonomy, with approval checks for critical actions.
@@ -279,7 +279,7 @@ Use strict memory separation and labeling.
 Seen in multi-tenant AI environments.
 
 **Related Patterns:**  
-[Router Pattern](#router-pattern).
+[Agentic Operating System Pattern](#agentic-operating-system-pattern), [Router Pattern](#router-pattern), [Self-Improvement Pattern](#self-improvement-pattern), [Loop Pattern](#loop-pattern), [Organizer Pattern](#organizer-pattern).
 
 **Structure:**  
 TBD: Diagram showing distinct memory zones per agent or instance.
@@ -353,7 +353,7 @@ Define concrete, checkable success criteria (run a smoke test, run the suite aga
 Spawning a goal-driven subagent to validate a generated skill against the base branch before keeping it.
 
 **Related Patterns:**  
-[Subagent Pattern](#subagent-pattern), [Loop Pattern](#loop-pattern) (Goal variant), [Circuit Breaker Pattern](#circuit-breaker-pattern), [Trustworthy Autonomy Pattern](#trustworthy-autonomy-pattern).
+[Self-Improvement Pattern](#self-improvement-pattern), [Subagent Pattern](#subagent-pattern), [Loop Pattern](#loop-pattern) (Goal variant), [Circuit Breaker Pattern](#circuit-breaker-pattern), [Trustworthy Autonomy Pattern](#trustworthy-autonomy-pattern).
 
 **Structure:**  
 TBD: Diagram showing a producing agent's output handed to a validating subagent (with a goal), returning pass/fail that gates acceptance or rework.
@@ -436,7 +436,7 @@ Design a mediator agent that oversees workflows.
 Seen in multi-agent virtual assistant systems.
 
 **Related Patterns:**  
-[Router Pattern](#router-pattern).
+[Agentic Operating System Pattern](#agentic-operating-system-pattern), [Router Pattern](#router-pattern), [Subagent Pattern](#subagent-pattern), [Assistant Pattern](#assistant-pattern).
 
 **Structure:**  
 TBD: Diagram showing a Chief of Staff agent mediating between other agents and the user.
@@ -473,7 +473,7 @@ Use rule-based or learning-based routing.
 Present in distributed AI platforms.
 
 **Related Patterns:**  
-[Chief of Staff Pattern](#chief-of-staff-pattern).
+[Chief of Staff Pattern](#chief-of-staff-pattern), [Memory Isolation Pattern](#memory-isolation-pattern), [Subagent Pattern](#subagent-pattern).
 
 **Structure:**  
 TBD: Diagram showing routing logic directing tasks.
@@ -598,7 +598,7 @@ Task/Commitment, Calendar/Scheduling, and Inbox/Communications Agents.
 Executive-assistant and personal-productivity agents.
 
 **Related Patterns:**  
-[Chief of Staff Pattern](#chief-of-staff-pattern), [Trustworthy Autonomy Pattern](#trustworthy-autonomy-pattern).
+[Chief of Staff Pattern](#chief-of-staff-pattern), [Trustworthy Autonomy Pattern](#trustworthy-autonomy-pattern), [Administrator Pattern](#administrator-pattern).
 
 **Structure:**  
 TBD: Diagram showing an Assistant agent maintaining task, calendar, and inbox state, feeding items into the daily operating rhythm.
@@ -638,7 +638,7 @@ Research Agent.
 Research and analyst agents.
 
 **Related Patterns:**  
-[Organizer Pattern](#organizer-pattern), [Collaborator Pattern](#collaborator-pattern).
+[Organizer Pattern](#organizer-pattern), [Collaborator Pattern](#collaborator-pattern), [Instructor Pattern](#instructor-pattern).
 
 **Structure:**  
 TBD: Diagram showing a Research agent drawing from multiple sources and producing a synthesized, cited brief.
@@ -678,7 +678,7 @@ Writing/Content Agent.
 Writing and content-generation agents.
 
 **Related Patterns:**  
-[Researcher Pattern](#researcher-pattern), [Trustworthy Autonomy Pattern](#trustworthy-autonomy-pattern).
+[Researcher Pattern](#researcher-pattern), [Trustworthy Autonomy Pattern](#trustworthy-autonomy-pattern), [Instructor Pattern](#instructor-pattern).
 
 **Structure:**  
 TBD: Interaction diagram showing iterative draft–feedback–refine cycles between the user and a Collaborator agent.
