@@ -18,6 +18,7 @@
 - [Memory Isolation Pattern](#memory-isolation-pattern)
 - [Self-Improvement Pattern](#self-improvement-pattern)
 - [Self-Validation Pattern](#self-validation-pattern)
+- [Contract Pattern](#contract-pattern)
 - [Circuit Breaker Pattern](#circuit-breaker-pattern)
 
 **[Capability Patterns](#capability-patterns)**
@@ -100,7 +101,7 @@ Establish the operating system as shared governance mechanisms, structured memor
 The Agentic Operating System assembled by the [Open AOS Factory](https://github.com/neoClarity-AI/Open-AOS-Factory), comprising governance agents (Chief of Staff, Memory, Security, Review) and optional productive agents.
 
 **Related Patterns:**  
-[Governance-First Pattern](#governance-first-pattern), [AOS Factory Pattern](#aos-factory-pattern), [Chief of Staff Pattern](#chief-of-staff-pattern), [Memory Isolation Pattern](#memory-isolation-pattern).
+[Governance-First Pattern](#governance-first-pattern), [AOS Factory Pattern](#aos-factory-pattern), [Chief of Staff Pattern](#chief-of-staff-pattern), [Memory Isolation Pattern](#memory-isolation-pattern), [Contract Pattern](#contract-pattern) (contracts as standard interfaces between agents, workflows, tools, memory, permissions, and outputs).
 
 **Structure:**
 
@@ -193,7 +194,7 @@ Provide agent templates and role-specific configurations.
 Agent builders for single-purpose bots. The [Open AOS Factory](https://github.com/neoClarity-AI/Open-AOS-Factory) is a reference implementation of this pattern (the per-agent builders).
 
 **Related Patterns:**  
-[AOS Factory Pattern](#aos-factory-pattern).
+[AOS Factory Pattern](#aos-factory-pattern), [Contract Pattern](#contract-pattern) (factory instantiates agents to a shared contract).
 
 **Structure:**  
 TBD: Diagram showing factory producing individual agents.
@@ -386,6 +387,63 @@ Spawning a goal-driven subagent to validate a generated skill against the base b
 
 **Structure:**  
 TBD: Diagram showing a producing agent's output handed to a validating subagent (with a goal), returning pass/fail that gates acceptance or rework.
+
+---
+
+### Contract Pattern
+
+**Intent:**  
+Bind an agent's task to an explicit, verifiable specification (typed inputs and outputs plus pre- and post-conditions) and have the agent self-correct against that specification, so probabilistic output is made to meet stated guarantees before it is accepted, with a type-valid fallback when it cannot.
+
+**Classification:**  
+Governance Pattern
+
+**Motivation:**  
+LLM-backed agents produce output that is plausible but not guaranteed: it can be the wrong shape, miss required fields, or be syntactically valid yet semantically wrong. Testing after the fact catches some of this, but only once bad output has already propagated. The Contract Pattern moves correctness into the design. The agent declares up front what valid input and output mean: a typed schema, pre-conditions on what it will accept, and post-conditions on what it must return. At run time the agent checks input against the pre-conditions, generates output, then checks that output against the post-conditions. When a check fails, the failure message is fed back as a corrective prompt so the agent can repair its own result, turning a validation failure into a self-correction step rather than an error. If repair does not converge, the contract still returns a type-valid fallback instead of propagating a broken result. Borrowed from Design by Contract, the obligations are explicit and enforced at the boundary, so a component's guarantees hold regardless of which model or logic produced the result.
+
+**Applicability:**  
+Use this pattern when an agent's output is consumed by something that needs guarantees (downstream code, another agent, or a user acting on it) and a malformed or plausible-but-wrong result would be costly. It fits especially when output must satisfy both a schema and semantic rules, when self-correction is preferable to a hard failure, and when components built on different models or rule-based systems must interoperate on agreed obligations.
+
+**Participants:**  
+The contracted agent, the input and output specifications (typed schema plus pre- and post-conditions), the fixed task prompt, the remediation mechanism (bounded retries driven by corrective prompts), and the fallback result.
+
+**Collaborations:**  
+Pre-conditions validate input before work begins. The agent generates output under a fixed task prompt. Post-conditions validate that output. Failed conditions emit descriptive messages that drive remediation retries. Complements the Self-Validation Pattern, which spawns a separate validating subagent, whereas a contract checks inline on the agent's own boundary. Pairs with the Circuit Breaker Pattern, which bounds the remediation loop so repair cannot run away. Clear contracts at interfaces also let agents compose reliably under the Chief of Staff and Router patterns. An Agent Factory can instantiate agents that implement the same contract, so agents are swapped or compared by contract satisfaction rather than by internal prompt design. An Agentic Operating System can adopt contracts as the standard interface between agents, workflows, tools, memory, permissions, and user-facing outputs.
+
+**Consequences:**  
+Raises reliability and makes a component's guarantees explicit and auditable at the boundary, and output is checked for substance rather than just shape, while the fallback keeps failures contained and type-safe. The costs are that meaningful pre- and post-conditions and field descriptions are real design work (weak checks give false confidence, and validating only shape lets dummy values through), and that remediation retries add latency and token cost, so the loop needs bounding.
+
+**Implementation:**  
+Define input and output as a typed schema with rich field descriptions. Write pre-conditions that raise descriptive errors on bad input and post-conditions that raise descriptive errors on output that is the wrong shape or semantically inadequate, since those messages are what guide self-correction. Keep the task prompt fixed and push per-call variation into the input rather than the prompt. Decide what to remediate (input, output, or both) and bound the retries with a maximum count, backoff, and a stop. Always provide a type-valid fallback for when the contract cannot be satisfied, and decide whether to return it or raise. Optionally accumulate prior error messages across retries so the agent can see what it already tried.
+
+**Known Uses:**  
+Design-by-Contract validation layers wrapped around LLM calls. SymbolicAI's `@contract` decorator (ExtensityAI/symbolicai) is a reference implementation: a contracted `Expression` declares a fixed `prompt`, `pre` pre-conditions, an optional `act` step, and `post` post-conditions over Pydantic-based data models, with `pre_remedy` and `post_remedy` driving LLM self-correction on failure, bounded retries, and a guaranteed type-valid fallback returned from `forward`.
+
+**Related Patterns:**  
+[Self-Validation Pattern](#self-validation-pattern) (distinct: a separate validating subagent versus inline boundary checks on the agent's own output), [Circuit Breaker Pattern](#circuit-breaker-pattern) (bounds the remediation loop), [Trustworthy Autonomy Pattern](#trustworthy-autonomy-pattern) (human approval gates versus automatic semantic checks), [Self-Improvement Pattern](#self-improvement-pattern), [Loop Pattern](#loop-pattern) (Goal variant), [Agent Factory Pattern](#agent-factory-pattern) (instantiates agents to a shared contract), [Agentic Operating System Pattern](#agentic-operating-system-pattern) (contracts as standard inter-component interfaces).
+
+**Structure:**
+
+```text
+                input
+                  |
+                  v
+        +-------------------+   fail + message
+        |  Pre-conditions   |-------------------+
+        +-------------------+                   |
+                  | pass                        v
+                  v                     +----------------+
+        [ Agent generates output ]<---- |  Remediation   |
+        [ under the fixed prompt  ]     |  (retry with   |
+                  |                     |  corrective    |
+                  v                     |  prompt)       |
+        +-------------------+  fail +   +----------------+
+        | Post-conditions   |  message          ^
+        +-------------------+-------------------+
+                  | pass         (retries bounded; on
+                  v              exhaustion ->)
+           accepted result  --------> type-valid fallback
+```
 
 ---
 
