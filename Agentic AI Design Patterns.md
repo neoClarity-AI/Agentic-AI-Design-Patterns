@@ -19,6 +19,7 @@
 - [Self-Improvement Pattern](#self-improvement-pattern)
 - [Self-Validation Pattern](#self-validation-pattern)
 - [Contract Pattern](#contract-pattern)
+- [Grounding Pattern](#grounding-pattern)
 - [Circuit Breaker Pattern](#circuit-breaker-pattern)
 
 **[Capability Patterns](#capability-patterns)**
@@ -272,7 +273,7 @@ Use approval workflows or human-in-the-loop mechanisms for critical tasks.
 Common in AI tools used in regulated industries. The [Open AOS Factory](https://github.com/neoClarity-AI/Open-AOS-Factory) is a reference implementation of this pattern (enforced by every agent's Approval Requirements, with the Security Agent owning the approval rules and tool access matrix).
 
 **Related Patterns:**  
-[Governance-First Pattern](#governance-first-pattern), [Self-Improvement Pattern](#self-improvement-pattern), [Self-Validation Pattern](#self-validation-pattern), [Circuit Breaker Pattern](#circuit-breaker-pattern), [Assistant Pattern](#assistant-pattern), [Collaborator Pattern](#collaborator-pattern), [Administrator Pattern](#administrator-pattern).
+[Governance-First Pattern](#governance-first-pattern), [Self-Improvement Pattern](#self-improvement-pattern), [Self-Validation Pattern](#self-validation-pattern), [Circuit Breaker Pattern](#circuit-breaker-pattern), [Assistant Pattern](#assistant-pattern), [Collaborator Pattern](#collaborator-pattern), [Administrator Pattern](#administrator-pattern), [Grounding Pattern](#grounding-pattern).
 
 **Structure:**  
 TBD: Interaction diagram showing agent autonomy, with approval checks for critical actions.
@@ -383,7 +384,7 @@ Define concrete, checkable success criteria (run a smoke test, run the suite aga
 Spawning a goal-driven subagent to validate a generated skill against the base branch before keeping it.
 
 **Related Patterns:**  
-[Self-Improvement Pattern](#self-improvement-pattern), [Subagent Pattern](#subagent-pattern), [Loop Pattern](#loop-pattern) (Goal variant), [Circuit Breaker Pattern](#circuit-breaker-pattern), [Trustworthy Autonomy Pattern](#trustworthy-autonomy-pattern).
+[Self-Improvement Pattern](#self-improvement-pattern), [Subagent Pattern](#subagent-pattern), [Loop Pattern](#loop-pattern) (Goal variant), [Circuit Breaker Pattern](#circuit-breaker-pattern), [Trustworthy Autonomy Pattern](#trustworthy-autonomy-pattern), [Grounding Pattern](#grounding-pattern).
 
 **Structure:**  
 TBD: Diagram showing a producing agent's output handed to a validating subagent (with a goal), returning pass/fail that gates acceptance or rework.
@@ -420,7 +421,7 @@ Define input and output as a typed schema with rich field descriptions. Write pr
 Design-by-Contract validation layers wrapped around LLM calls. SymbolicAI's `@contract` decorator (ExtensityAI/symbolicai) is a reference implementation: a contracted `Expression` declares a fixed `prompt`, `pre` pre-conditions, an optional `act` step, and `post` post-conditions over Pydantic-based data models, with `pre_remedy` and `post_remedy` driving LLM self-correction on failure, bounded retries, and a guaranteed type-valid fallback returned from `forward`.
 
 **Related Patterns:**  
-[Self-Validation Pattern](#self-validation-pattern) (distinct: a separate validating subagent versus inline boundary checks on the agent's own output), [Circuit Breaker Pattern](#circuit-breaker-pattern) (bounds the remediation loop), [Trustworthy Autonomy Pattern](#trustworthy-autonomy-pattern) (human approval gates versus automatic semantic checks), [Self-Improvement Pattern](#self-improvement-pattern), [Loop Pattern](#loop-pattern) (Goal variant), [Agent Factory Pattern](#agent-factory-pattern) (instantiates agents to a shared contract), [Agentic Operating System Pattern](#agentic-operating-system-pattern) (contracts as standard inter-component interfaces).
+[Self-Validation Pattern](#self-validation-pattern) (distinct: a separate validating subagent versus inline boundary checks on the agent's own output), [Circuit Breaker Pattern](#circuit-breaker-pattern) (bounds the remediation loop), [Trustworthy Autonomy Pattern](#trustworthy-autonomy-pattern) (human approval gates versus automatic semantic checks), [Self-Improvement Pattern](#self-improvement-pattern), [Loop Pattern](#loop-pattern) (Goal variant), [Agent Factory Pattern](#agent-factory-pattern) (instantiates agents to a shared contract), [Agentic Operating System Pattern](#agentic-operating-system-pattern) (contracts as standard inter-component interfaces), [Grounding Pattern](#grounding-pattern) (distinct: evidentiary basis for a claim versus schema/semantic shape of output).
 
 **Structure:**
 
@@ -444,6 +445,41 @@ Design-by-Contract validation layers wrapped around LLM calls. SymbolicAI's `@co
                   v              exhaustion ->)
            accepted result  --------> type-valid fallback
 ```
+
+### Grounding Pattern
+
+**Intent:**  
+Require that an AI's factual claims, decisions, or actions be based on appropriate authoritative evidence available at the time of execution, rather than on unverified assumption or stale training-time recall.
+
+**Classification:**  
+Governance Pattern
+
+**Motivation:**  
+An agent asked for a fact, a decision, or a consequential action can produce a fluent, confident answer built on nothing more than its training-time priors: a price that has since changed, a policy that has been superseded, a person no longer in the role. The output looks correct whether or not it is, and the error only surfaces once the user or a downstream system has already acted on it. Training data also has a fixed cutoff, so anything time-sensitive is a blind spot by construction. Grounding closes this gap by making evidence retrieval a required step rather than an optional enhancement: before stating a claim, making a decision, or executing an action, the agent consults an appropriate authoritative source current as of that moment (a live search, a canonical document, a system of record, a domain expert's confirmation) and ties its output to what that source actually says, rather than to what it recalls.
+
+**Applicability:**  
+Use this pattern whenever a claim, decision, or action could be wrong because the world has changed since training, because the fact is domain- or account-specific rather than general knowledge, or because the cost of an ungrounded error (financial, legal, safety, reputational) is high enough that "the model believes it" is not sufficient justification.
+
+**Participants:**  
+The grounded agent, the evidentiary source(s) (live search, document store, database, API, human expert), the grounding step (retrieval or verification performed before or during generation), and the resulting claim, decision, or action, carrying a citation or evidence trail.
+
+**Collaborations:**  
+Distinct from and complementary to the Self-Validation Pattern (which checks output after generation via an independent subagent) and the Contract Pattern (which checks output shape and semantics against pre- and post-conditions): Grounding constrains the evidence the output may be based on, upstream of those checks, rather than checking the output itself. Underpins the Researcher Pattern, whose cited, confidence-scored briefs are a productivity-level instance of grounded synthesis. Trustworthy Autonomy's approval gates are only as good as the decision presented for approval, so a grounded decision makes that gate meaningful rather than a rubber stamp on an assumption.
+
+**Consequences:**  
+Reduces confident-but-wrong output and gives the user or a downstream system a citation trail to audit. The costs are added latency and tool calls for retrieval, and a residual risk that stays no matter how disciplined the process is: grounding is only as good as the source it grounds against, so a stale, biased, or wrong source produces a grounded-looking but still-wrong result.
+
+**Implementation:**  
+Identify authoritative sources per domain (documentation, live search, an internal system of record) and prefer sources that carry their own timestamp or version. Require a retrieval or verification step before stating a fact, making a decision, or taking a consequential action, rather than answering from memory alone. Attach the source to the output (a citation, a link, a document reference) so the claim is auditable after the fact. Treat "no current source found" as a distinct, disclosed state rather than silently falling back to an unstated guess. Re-check time-sensitive claims rather than caching them indefinitely.
+
+**Known Uses:**  
+Retrieval-augmented generation systems; assistants required to search before answering questions about current events, prices, or role holders rather than answering from trained knowledge; agents that must check a live system of record before reporting its state.
+
+**Related Patterns:**  
+[Self-Validation Pattern](#self-validation-pattern) (distinct: constrains input evidence versus checking output after the fact), [Contract Pattern](#contract-pattern) (distinct: evidentiary basis versus schema/semantic shape), [Trustworthy Autonomy Pattern](#trustworthy-autonomy-pattern) (a grounded decision is what makes an approval gate meaningful), [Researcher Pattern](#researcher-pattern) (a productivity-level application of grounded, cited synthesis).
+
+**Structure:**  
+TBD: Diagram showing a claim/decision/action gated on a retrieval or verification step against an authoritative, time-stamped source, with the source attached to the output as a citation trail.
 
 ---
 
@@ -719,7 +755,7 @@ Use approved search and retrieval tools per the access matrix. Always cite sourc
 Research and analyst agents. The [Open AOS Factory](https://github.com/neoClarity-AI/Open-AOS-Factory) is a reference implementation of this pattern (Research Agent).
 
 **Related Patterns:**  
-[Organizer Pattern](#organizer-pattern), [Collaborator Pattern](#collaborator-pattern), [Instructor Pattern](#instructor-pattern).
+[Organizer Pattern](#organizer-pattern), [Collaborator Pattern](#collaborator-pattern), [Instructor Pattern](#instructor-pattern), [Grounding Pattern](#grounding-pattern).
 
 **Structure:**  
 TBD: Diagram showing a Research agent drawing from multiple sources and producing a synthesized, cited brief.
